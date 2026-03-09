@@ -24,7 +24,6 @@ import { useState, useEffect } from "react";
 const spendingCategories = [
   { key: "monthlyGroceries", label: "Groceries", icon: ShoppingCart, color: "text-chart-5" },
   { key: "monthlyDining", label: "Dining Out", icon: Utensils, color: "text-chart-4" },
-  { key: "monthlyTravel", label: "Travel", icon: Plane, color: "text-primary" },
   { key: "monthlyGas", label: "Gas", icon: Fuel, color: "text-chart-3" },
   { key: "monthlyOnline", label: "Online Shopping", icon: Package, color: "text-chart-2" },
   { key: "monthlyOther", label: "Other", icon: DollarSign, color: "text-muted-foreground" },
@@ -128,13 +127,18 @@ function RecommendationCard({ rec, index }: { rec: CardRecommendation; index: nu
           <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Why This Card</p>
           {visibleBreakdown.length > 0 && (
             <div className="space-y-1.5 mb-3">
+              {visibleBreakdown[0] && (
+                <p className="text-xs text-muted-foreground mb-1" data-testid={`text-point-value-${index}`}>
+                  Each point/mile is worth ${visibleBreakdown[0].pointValue.toFixed(4)} ({(visibleBreakdown[0].pointValue * 100).toFixed(2)} cents)
+                </p>
+              )}
               {visibleBreakdown.map((b, i) => (
                 <div key={i} className="flex items-center justify-between gap-2 text-sm" data-testid={`breakdown-row-${index}-${i}`}>
-                  <span className="text-muted-foreground capitalize">
+                  <span className="text-muted-foreground capitalize shrink-0">
                     {categoryLabels[b.category] || b.category}
                   </span>
                   <span className="text-xs text-muted-foreground/70 flex-1 text-right mr-2">
-                    ${b.annualSpend.toLocaleString()}/yr x {b.multiplier}x x ${b.pointValue}
+                    ${b.annualSpend.toLocaleString()}/yr x {b.multiplier}x x ${b.pointValue} <span className="text-muted-foreground/50">(pt value)</span>
                   </span>
                   <span className="font-semibold text-chart-5 shrink-0">
                     ${b.rewardValue.toFixed(0)}/yr
@@ -342,7 +346,7 @@ export default function SessionPage() {
     (c) => !formData.currentCards.some((cc) => cc.name === c.name)
   );
 
-  const totalMonthly = formData.monthlyGroceries + formData.monthlyDining + formData.monthlyTravel + formData.monthlyGas + formData.monthlyOnline + formData.monthlyOther;
+  const totalMonthly = formData.monthlyGroceries + formData.monthlyDining + formData.monthlyGas + formData.monthlyOnline + formData.monthlyOther;
 
   if (isLoading) {
     return (

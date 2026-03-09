@@ -5,7 +5,7 @@ function getAnnualSpending(session: SpendingSession) {
   return {
     groceries: session.monthlyGroceries * 12,
     dining: session.monthlyDining * 12,
-    travel: session.monthlyTravel * 12 + session.annualTravelBudget,
+    travel: session.annualTravelBudget,
     gas: session.monthlyGas * 12,
     online: session.monthlyOnline * 12,
     other: session.monthlyOther * 12,
