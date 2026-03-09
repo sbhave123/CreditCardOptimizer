@@ -1,4 +1,4 @@
-# CardWise
+# OptimizeCreditCards https://OptimizeCreditCards.replit.app
 
 A credit card recommendation engine that analyzes your actual spending habits and tells you exactly which cards will earn you the most — and shows you the math to prove it.
 
