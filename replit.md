@@ -4,6 +4,7 @@
 CardWise helps users find the optimal credit card based on their spending habits and travel patterns. Users can create multiple "sessions" to test different spending scenarios and compare credit card recommendations.
 
 ## Recent Changes
+- 2026-03-09: Added per-category reward breakdown in "Why This Card" (shows spend x multiplier x point value = reward), current card comparison section (swap/keep-both/current-is-better advice), and dropdown card selection replacing free-text input
 - 2026-02-12: Initial MVP build - Auth, schema, frontend, backend, recommendation engine
 
 ## Architecture

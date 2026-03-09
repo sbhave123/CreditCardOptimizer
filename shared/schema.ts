@@ -52,6 +52,24 @@ export interface CurrentCard {
   category?: string;
 }
 
+export interface CategoryBreakdown {
+  category: string;
+  annualSpend: number;
+  multiplier: number;
+  pointValue: number;
+  rewardValue: number;
+  description: string;
+}
+
+export interface CurrentCardComparison {
+  currentCardName: string;
+  currentCardAnnualFee: number;
+  advice: "swap" | "keep-both" | "current-is-better";
+  explanation: string;
+  currentCardValue: number;
+  recommendedCardValue: number;
+}
+
 export interface CardRecommendation {
   cardName: string;
   issuer: string;
@@ -60,6 +78,8 @@ export interface CardRecommendation {
   signUpSpendRequirement: number;
   signUpTimeframe: number;
   rewardsBreakdown: RewardCategory[];
+  categoryBreakdown: CategoryBreakdown[];
+  currentCardComparisons: CurrentCardComparison[];
   estimatedAnnualRewards: number;
   netAnnualValue: number;
   noForeignTransactionFee: boolean;

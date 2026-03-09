@@ -11,14 +11,14 @@ import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ArrowLeft, CreditCard, ShoppingCart, Utensils, Plane, Fuel, Globe, Package,
-  DollarSign, TrendingUp, TrendingDown, ArrowRightLeft, Check, Sparkles, Sun, Moon, Plus, X, RefreshCw,
+  DollarSign, TrendingUp, TrendingDown, ArrowRightLeft, Check, Sparkles, Sun, Moon, Plus, X, RefreshCw, ArrowRight,
 } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { useTheme } from "@/lib/theme-provider";
-import type { SpendingSession, CurrentCard, CardRecommendation } from "@shared/schema";
+import type { SpendingSession, CurrentCard, CardRecommendation, CreditCardData } from "@shared/schema";
 import { useState, useEffect } from "react";
 
 const spendingCategories = [
@@ -29,6 +29,16 @@ const spendingCategories = [
   { key: "monthlyOnline", label: "Online Shopping", icon: Package, color: "text-chart-2" },
   { key: "monthlyOther", label: "Other", icon: DollarSign, color: "text-muted-foreground" },
 ] as const;
+
+const categoryLabels: Record<string, string> = {
+  groceries: "Groceries",
+  dining: "Dining",
+  travel: "Travel",
+  gas: "Gas",
+  online: "Online",
+  other: "Other",
+  rotating: "Rotating Categories",
+};
 
 function RecommendationCard({ rec, index }: { rec: CardRecommendation; index: number }) {
   const actionColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -46,6 +56,14 @@ function RecommendationCard({ rec, index }: { rec: CardRecommendation; index: nu
     keep: Check,
   };
   const ActionIcon = actionIcons[rec.action] || Sparkles;
+
+  const comparisonAdviceStyles: Record<string, { bg: string; text: string; label: string }> = {
+    "swap": { bg: "bg-amber-500/10", text: "text-amber-500", label: "Swap" },
+    "keep-both": { bg: "bg-emerald-500/10", text: "text-emerald-500", label: "Keep Both" },
+    "current-is-better": { bg: "bg-blue-500/10", text: "text-blue-500", label: "Current is Better" },
+  };
+
+  const visibleBreakdown = (rec.categoryBreakdown || []).filter((b) => b.rewardValue > 0);
 
   return (
     <Card className={index === 0 ? "border-primary/30" : ""} data-testid={`card-recommendation-${index}`}>
@@ -106,13 +124,76 @@ function RecommendationCard({ rec, index }: { rec: CardRecommendation; index: nu
           <p className="text-sm">{rec.signUpBonus}</p>
         </div>
 
-        <div className="p-3 rounded-md bg-accent/50">
-          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Why This Card</p>
-          <p className="text-sm leading-relaxed" data-testid={`text-why-${index}`}>{rec.whyRecommended}</p>
+        <div className="p-3 rounded-md bg-accent/50 mb-4" data-testid={`section-why-${index}`}>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Why This Card</p>
+          {visibleBreakdown.length > 0 && (
+            <div className="space-y-1.5 mb-3">
+              {visibleBreakdown.map((b, i) => (
+                <div key={i} className="flex items-center justify-between gap-2 text-sm" data-testid={`breakdown-row-${index}-${i}`}>
+                  <span className="text-muted-foreground capitalize">
+                    {categoryLabels[b.category] || b.category}
+                  </span>
+                  <span className="text-xs text-muted-foreground/70 flex-1 text-right mr-2">
+                    ${b.annualSpend.toLocaleString()}/yr x {b.multiplier}x x ${b.pointValue}
+                  </span>
+                  <span className="font-semibold text-chart-5 shrink-0">
+                    ${b.rewardValue.toFixed(0)}/yr
+                  </span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between gap-2 text-sm pt-1.5 border-t border-border/50">
+                <span className="font-medium">Total Estimated Rewards</span>
+                <span className="font-bold text-primary">${rec.estimatedAnnualRewards.toFixed(0)}/yr</span>
+              </div>
+              {rec.annualFee > 0 && (
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-muted-foreground">Minus Annual Fee</span>
+                  <span className="text-muted-foreground">-${rec.annualFee}</span>
+                </div>
+              )}
+            </div>
+          )}
+          <p className="text-sm leading-relaxed text-muted-foreground" data-testid={`text-why-${index}`}>{rec.whyRecommended}</p>
         </div>
 
+        {rec.currentCardComparisons && rec.currentCardComparisons.length > 0 && (
+          <div className="p-3 rounded-md bg-muted/30 mb-4" data-testid={`section-comparisons-${index}`}>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Your Cards vs. This Card</p>
+            <div className="space-y-3">
+              {rec.currentCardComparisons.map((comp, ci) => {
+                const adviceStyle = comparisonAdviceStyles[comp.advice] || comparisonAdviceStyles["keep-both"];
+                return (
+                  <div key={ci} className="p-3 rounded-md bg-background/50 border border-border/30" data-testid={`comparison-${index}-${ci}`}>
+                    <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">{comp.currentCardName}</span>
+                      </div>
+                      <Badge variant="secondary" className={`text-xs ${adviceStyle.bg} ${adviceStyle.text} border-0`}>
+                        {adviceStyle.label}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3 mb-2 text-xs flex-wrap">
+                      <div className="px-2 py-1 rounded bg-muted/50">
+                        <span className="text-muted-foreground">Current: </span>
+                        <span className="font-semibold">${comp.currentCardValue.toFixed(0)}/yr</span>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                      <div className="px-2 py-1 rounded bg-primary/10">
+                        <span className="text-muted-foreground">Recommended: </span>
+                        <span className="font-semibold text-primary">${comp.recommendedCardValue.toFixed(0)}/yr</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{comp.explanation}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {rec.actionExplanation && (
-          <div className="mt-3 p-3 rounded-md bg-muted/50">
+          <div className="p-3 rounded-md bg-muted/50 mb-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
               {rec.action === "swap" ? "Why Swap" : rec.action === "upgrade" ? "Why Upgrade" : "Action"}
             </p>
@@ -121,7 +202,7 @@ function RecommendationCard({ rec, index }: { rec: CardRecommendation; index: nu
         )}
 
         {rec.breakEvenSpending && Object.keys(rec.breakEvenSpending).length > 0 && (
-          <div className="mt-3">
+          <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Break-Even Monthly Spending</p>
             <div className="flex flex-wrap gap-2">
               {Object.entries(rec.breakEvenSpending).map(([cat, amount]) => (
@@ -149,6 +230,10 @@ export default function SessionPage() {
     queryKey: ["/api/sessions", id],
   });
 
+  const { data: allCreditCards } = useQuery<CreditCardData[]>({
+    queryKey: ["/api/credit-cards"],
+  });
+
   const [formData, setFormData] = useState({
     monthlyGroceries: 0,
     monthlyDining: 0,
@@ -162,8 +247,7 @@ export default function SessionPage() {
     currentCards: [] as CurrentCard[],
   });
 
-  const [newCardName, setNewCardName] = useState("");
-  const [newCardFee, setNewCardFee] = useState("");
+  const [selectedCardName, setSelectedCardName] = useState("");
   const [activeTab, setActiveTab] = useState("spending");
 
   useEffect(() => {
@@ -235,13 +319,16 @@ export default function SessionPage() {
   };
 
   const addCurrentCard = () => {
-    if (!newCardName.trim()) return;
+    if (!selectedCardName) return;
+    const cardData = allCreditCards?.find((c) => c.name === selectedCardName);
+    if (!cardData) return;
+    const alreadyAdded = formData.currentCards.some((c) => c.name === cardData.name);
+    if (alreadyAdded) return;
     setFormData((prev) => ({
       ...prev,
-      currentCards: [...prev.currentCards, { name: newCardName.trim(), annualFee: Number(newCardFee) || 0 }],
+      currentCards: [...prev.currentCards, { name: cardData.name, annualFee: cardData.annualFee, category: cardData.category }],
     }));
-    setNewCardName("");
-    setNewCardFee("");
+    setSelectedCardName("");
   };
 
   const removeCurrentCard = (index: number) => {
@@ -250,6 +337,10 @@ export default function SessionPage() {
       currentCards: prev.currentCards.filter((_, i) => i !== index),
     }));
   };
+
+  const availableCards = (allCreditCards || []).filter(
+    (c) => !formData.currentCards.some((cc) => cc.name === c.name)
+  );
 
   const totalMonthly = formData.monthlyGroceries + formData.monthlyDining + formData.monthlyTravel + formData.monthlyGas + formData.monthlyOnline + formData.monthlyOther;
 
@@ -458,32 +549,40 @@ export default function SessionPage() {
                 <Label className="font-medium mb-3 block">Add Current Credit Card</Label>
                 <div className="flex items-end gap-3 flex-wrap">
                   <div className="flex-1 min-w-[200px]">
-                    <Label className="text-xs text-muted-foreground mb-1 block">Card Name</Label>
-                    <Input
-                      value={newCardName}
-                      onChange={(e) => setNewCardName(e.target.value)}
-                      placeholder="e.g., Chase Freedom"
-                      data-testid="input-card-name"
-                      onKeyDown={(e) => { if (e.key === "Enter") addCurrentCard(); }}
-                    />
+                    <Label className="text-xs text-muted-foreground mb-1 block">Select a Card</Label>
+                    <Select value={selectedCardName} onValueChange={(val) => setSelectedCardName(val)} data-testid="select-card-dropdown">
+                      <SelectTrigger data-testid="select-card-trigger">
+                        <SelectValue placeholder="Choose a credit card..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableCards.map((card) => (
+                          <SelectItem key={card.name} value={card.name} data-testid={`select-card-option-${card.name}`}>
+                            <span>{card.name}</span>
+                            <span className="text-muted-foreground ml-2 text-xs">({card.issuer} - ${card.annualFee}/yr)</span>
+                          </SelectItem>
+                        ))}
+                        {availableCards.length === 0 && (
+                          <SelectItem value="__none__" disabled>All cards have been added</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="w-32">
-                    <Label className="text-xs text-muted-foreground mb-1 block">Annual Fee</Label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        type="number"
-                        min={0}
-                        value={newCardFee}
-                        onChange={(e) => setNewCardFee(e.target.value)}
-                        placeholder="0"
-                        className="pl-8"
-                        data-testid="input-card-fee"
-                        onKeyDown={(e) => { if (e.key === "Enter") addCurrentCard(); }}
-                      />
+                  {selectedCardName && (
+                    <div className="w-32">
+                      <Label className="text-xs text-muted-foreground mb-1 block">Annual Fee</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          value={allCreditCards?.find((c) => c.name === selectedCardName)?.annualFee ?? 0}
+                          readOnly
+                          className="pl-8 bg-muted/30"
+                          data-testid="input-card-fee"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <Button onClick={addCurrentCard} disabled={!newCardName.trim()} data-testid="button-add-card">
+                  )}
+                  <Button onClick={addCurrentCard} disabled={!selectedCardName} data-testid="button-add-card">
                     <Plus className="w-4 h-4 mr-1" />
                     Add
                   </Button>
